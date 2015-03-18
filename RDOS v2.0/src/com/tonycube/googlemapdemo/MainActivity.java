@@ -462,21 +462,22 @@ public class MainActivity extends Activity implements LocationListener {
 	public void Start(View v) {
 		if(filename.equals("")){
 			ShowMsg("Please enter the file name first!!", true);
-			
-		}
-		String send = "1";
-		byte[] a = send.getBytes();
-		try {
-			// 輸出訊息
-			btOut.write(a);// 1
-			btOut.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
+		}else{
+			String send = "1";
+			byte[] a = send.getBytes();
+			try {
+				// 輸出訊息
+				btOut.write(a);// 1
+				btOut.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
 
-			Disconnect(); // 中斷連線
+				Disconnect(); // 中斷連線
 
-			ShowMsg("藍芽訊息送出失敗，連線已重設: " + e.getMessage(), true);
+				ShowMsg("藍芽訊息送出失敗，連線已重設: " + e.getMessage(), true);
+			}
 		}
+		
 	}
 
 	@Override
