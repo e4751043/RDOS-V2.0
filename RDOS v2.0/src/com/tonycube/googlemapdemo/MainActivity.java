@@ -52,6 +52,7 @@ public class MainActivity extends Activity implements LocationListener {
 	private TextView recvNum1;
 	private TextView recvNum2;
 	private TextView recvNum3;
+	
 
 	// ÂÅªÞSerial Port Profile
 	private static final UUID SPP_UUID = UUID
@@ -459,6 +460,10 @@ public class MainActivity extends Activity implements LocationListener {
 	}
 
 	public void Start(View v) {
+		if(filename.equals("")){
+			ShowMsg("Please enter the file name first!!", true);
+			
+		}
 		String send = "1";
 		byte[] a = send.getBytes();
 		try {
