@@ -44,14 +44,18 @@ public class MainActivity extends Activity implements LocationListener {
 	private WebView webView;
 	private EditText LatText, LogText, filename;
 	private Button submit;
-	private Button connect;
-	private Button disconnect;
+	private Button connect, conn;
+	private Button disconnect, disconn;
 	private boolean webviewReady = false;
 	private Location mostRecentLocation = null;
 	//
 	private TextView recvNum1;
 	private TextView recvNum2;
 	private TextView recvNum3;
+	private TextView frontlog;
+	private TextView leftlog;
+	private TextView rightlog;
+	private TextView write;
 
 	// 藍芽Serial Port Profile
 	private static final UUID SPP_UUID = UUID
@@ -68,16 +72,6 @@ public class MainActivity extends Activity implements LocationListener {
 	private String deviceAddr; // 欲連接之藍芽裝置位址
 
 	//
-	private void getLocation() {// 取得裝置的GPS位置資料
-		LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		Criteria criteria = new Criteria();
-		criteria.setAccuracy(Criteria.ACCURACY_FINE);
-		String provider = locationManager.getBestProvider(criteria, true);
-		// In order to make sure the device is getting the location, request
-		// updates.
-		locationManager.requestLocationUpdates(provider, 1, 0, this);
-		mostRecentLocation = locationManager.getLastKnownLocation(provider);
-	}
 
 	@Override
 	/** Called when the activity is first created. */
@@ -92,17 +86,17 @@ public class MainActivity extends Activity implements LocationListener {
 		TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
 		tabHost.setup();
 
-		TabSpec spec1 = tabHost.newTabSpec("Tab 1");
-		spec1.setContent(R.id.tab1);
-		spec1.setIndicator("Tab 1");
+		TabSpec spec1 = tabHost.newTabSpec("Main");
+		spec1.setContent(R.id.Main);
+		spec1.setIndicator("Main");
 
-		TabSpec spec2 = tabHost.newTabSpec("Tab 2");
-		spec2.setIndicator("Tab 2");
-		spec2.setContent(R.id.tab2);
+		TabSpec spec2 = tabHost.newTabSpec("Log");
+		spec2.setIndicator("Log");
+		spec2.setContent(R.id.Log);
 
-		TabSpec spec3 = tabHost.newTabSpec("Tab 3");
-		spec3.setIndicator("Tab 3");
-		spec3.setContent(R.id.tab3);
+		TabSpec spec3 = tabHost.newTabSpec("Setup");
+		spec3.setIndicator("Setup");
+		spec3.setContent(R.id.Setup);
 
 		tabHost.addTab(spec1);
 		tabHost.addTab(spec2);
@@ -112,6 +106,10 @@ public class MainActivity extends Activity implements LocationListener {
 		recvNum1 = (TextView) findViewById(R.id.textView5);
 		recvNum2 = (TextView) findViewById(R.id.textView4);
 		recvNum3 = (TextView) findViewById(R.id.textView6);
+		frontlog = (TextView) findViewById(R.id.frontlog);
+		leftlog = (TextView) findViewById(R.id.leftlog);
+		rightlog = (TextView) findViewById(R.id.rightlog);
+		write = (TextView) findViewById(R.id.write);
 
 		// 初始化藍芽
 		btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -126,62 +124,42 @@ public class MainActivity extends Activity implements LocationListener {
 		// 輸入名稱
 		filename = (EditText) findViewById(R.id.filename);
 
-		// G
-		LatText = (EditText) findViewById(R.id.LatText);
-		LogText = (EditText) findViewById(R.id.LogText);
-		submit = (Button) findViewById(R.id.submit);
 		// 開始連線
-		connect = (Button) findViewById(R.id.connect);
-		connect.setOnClickListener(new Button.OnClickListener() {
+
+		conn = (Button) findViewById(R.id.conn);
+		conn.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
 				deviceAddr = "98:D3:31:B1:3A:56";
 				Thread t = new Thread(sppConnect);
 				t.start();
 			}
 		});
+
 		// 結束連線
-		disconnect = (Button) findViewById(R.id.disconnect);
-		disconnect.setOnClickListener(new Button.OnClickListener() {
+
+		disconn = (Button) findViewById(R.id.disconn);
+		disconn.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
 
 				Disconnect();
-				ShowMsg("結束連線", true);
+				ShowMsg("Disconnect", true);
 
 			}
 		});
-		submit.setOnClickListener(new Button.OnClickListener() {
-			@Override
-			public void onClick(View v) {
 
-				// TODO Auto-generated method stub
-
-				if (webviewReady) {
-					// 由輸入的經緯度值標註在地圖上，呼叫在googlemaps.html中的mark函式
-					final String markURL = "javascript:mark("
-							+ LatText.getText() + "," + LogText.getText() + ")";
-					webView.loadUrl(markURL);
-
-					// 畫面移至標註點位置，呼叫在googlemaps.html中的centerAt函式
-					final String centerURL = "javascript:centerAt("
-							+ LatText.getText() + "," + LogText.getText() + ")";
-					webView.loadUrl(centerURL);
-				}
-
-			}
-		});
-		getLocation();// 取得定位位置
-		setupWebView();// 設定webview
-		if (mostRecentLocation != null) {
-			LatText.setText("" + mostRecentLocation.getLatitude());
-			LogText.setText("" + mostRecentLocation.getLongitude());
-
-			// 將畫面移至定位點的位置
-			final String centerURL = "javascript:centerAt("
-					+ mostRecentLocation.getLatitude() + ","
-					+ mostRecentLocation.getLongitude() + ")";
-			if (webviewReady)
-				webView.loadUrl(centerURL);
-		}
+		// getLocation();// 取得定位位置
+		// setupWebView();// 設定webview
+		// if (mostRecentLocation != null) {
+		// LatText.setText("" + mostRecentLocation.getLatitude());
+		// LogText.setText("" + mostRecentLocation.getLongitude());
+		//
+		// // 將畫面移至定位點的位置
+		// final String centerURL = "javascript:centerAt("
+		// + mostRecentLocation.getLatitude() + ","
+		// + mostRecentLocation.getLongitude() + ")";
+		// if (webviewReady)
+		// webView.loadUrl(centerURL);
+		// }
 		// G
 	}
 
@@ -252,7 +230,7 @@ public class MainActivity extends Activity implements LocationListener {
 				Thread t = new Thread(sppReceiver);
 				t.start();
 
-				ShowMsg("藍芽裝置已開啟: " + deviceAddr, true);
+				ShowMsg("Bluetooth device is opened: " + deviceAddr, true);
 			} catch (Exception e) {
 				e.printStackTrace();
 
@@ -263,7 +241,7 @@ public class MainActivity extends Activity implements LocationListener {
 				}
 
 				btSocket = null;
-				ShowMsg("藍芽裝置開啟失敗: " + e.getMessage(), true);
+				ShowMsg("Connection Failed: " + e.getMessage(), true);
 			}
 		}
 
@@ -322,6 +300,9 @@ public class MainActivity extends Activity implements LocationListener {
 						Show(Left_lengthtoStr, recvNum1);
 						Show(Front_lengthtoStr, recvNum2);
 						Show(Right_lengthtoStr, recvNum3);
+						Show(Left_lengthtoStr, leftlog);
+						Show(Front_lengthtoStr, frontlog);
+						Show(Right_lengthtoStr, rightlog);
 
 						j += 1;
 						if (j > 1024) {
@@ -329,6 +310,7 @@ public class MainActivity extends Activity implements LocationListener {
 						}
 					}
 					if (Left_length > 0 && Front_length > 0 && Right_length > 0) {
+						Show("Writing...", write);
 						String content = filename.getText().toString();
 						SimpleDateFormat formatter = new SimpleDateFormat(
 								"yyyy-MM-dd-HH:mm:ss");
@@ -360,6 +342,8 @@ public class MainActivity extends Activity implements LocationListener {
 						bwR.close();
 
 						Thread.sleep(1000);
+					} else {
+						Show("", write);
 					}
 					Arrays.fill(buffer, (byte) 0); // 清空buffer
 				}
@@ -367,7 +351,7 @@ public class MainActivity extends Activity implements LocationListener {
 				e.printStackTrace();
 
 				Disconnect(); // 中斷連線
-				ShowMsg("藍芽訊息接收失敗，連線已重設: " + e.getMessage(), true);
+				ShowMsg("Connection Failed: " + e.getMessage(), true);
 			}
 		}
 
@@ -427,21 +411,19 @@ public class MainActivity extends Activity implements LocationListener {
 	//
 
 	/** Sets up the WebView object and loads the URL of the page **/
-	private void setupWebView() {
-
-		webView = (WebView) findViewById(R.id.webview);
-		webView.getSettings().setJavaScriptEnabled(true);
-		// Wait for the page to load then send the location information
-		webView.setWebViewClient(new WebViewClient() {
-			@Override
-			public void onPageFinished(WebView view, String url) {
-				// webView.loadUrl(centerURL);
-				webviewReady = true;// webview已經載入完畢
-			}
-
-		});
-		webView.loadUrl(MAP_URL);
-	}
+	/*
+	 * private void setupWebView() {
+	 * 
+	 * webView = (WebView) findViewById(R.id.webview);
+	 * webView.getSettings().setJavaScriptEnabled(true); // Wait for the page to
+	 * load then send the location information webView.setWebViewClient(new
+	 * WebViewClient() {
+	 * 
+	 * @Override public void onPageFinished(WebView view, String url) { //
+	 * webView.loadUrl(centerURL); webviewReady = true;// webview已經載入完畢 }
+	 * 
+	 * }); webView.loadUrl(MAP_URL); }
+	 */
 
 	@Override
 	public void onLocationChanged(Location location) {// 定位位置改變時會執行的方法
@@ -459,19 +441,24 @@ public class MainActivity extends Activity implements LocationListener {
 	}
 
 	public void Start(View v) {
-		String send = "1";
-		byte[] a = send.getBytes();
-		try {
-			// 輸出訊息
-			btOut.write(a);// 1
-			btOut.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (filename.getText().toString().equals("") == true) {
+			ShowMsg("Please enter the file name first!!", true);
+		} else {
+			String send = "1";
+			byte[] a = send.getBytes();
+			try {
+				// 輸出訊息
+				btOut.write(a);// 1
+				btOut.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
 
-			Disconnect(); // 中斷連線
+				Disconnect(); // 中斷連線
 
-			ShowMsg("藍芽訊息送出失敗，連線已重設: " + e.getMessage(), true);
+				ShowMsg("Connecttion Failed: " + e.getMessage(), true);
+			}
 		}
+
 	}
 
 	@Override
