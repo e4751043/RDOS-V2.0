@@ -44,14 +44,17 @@ public class MainActivity extends Activity implements LocationListener {
 	private WebView webView;
 	private EditText LatText, LogText, filename;
 	private Button submit;
-	private Button connect;
-	private Button disconnect;
+	private Button connect, conn;
+	private Button disconnect , disconn;
 	private boolean webviewReady = false;
 	private Location mostRecentLocation = null;
 	//
 	private TextView recvNum1;
 	private TextView recvNum2;
 	private TextView recvNum3;
+	private TextView frontlog;
+	private TextView leftlog;
+	private TextView rightlog;
 
 	// 藍芽Serial Port Profile
 	private static final UUID SPP_UUID = UUID
@@ -92,17 +95,17 @@ public class MainActivity extends Activity implements LocationListener {
 		TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
 		tabHost.setup();
 
-		TabSpec spec1 = tabHost.newTabSpec("Tab 1");
-		spec1.setContent(R.id.tab1);
-		spec1.setIndicator("Tab 1");
+		TabSpec spec1 = tabHost.newTabSpec("Main");
+		spec1.setContent(R.id.Main);
+		spec1.setIndicator("Main");
 
-		TabSpec spec2 = tabHost.newTabSpec("Tab 2");
-		spec2.setIndicator("Tab 2");
-		spec2.setContent(R.id.tab2);
+		TabSpec spec2 = tabHost.newTabSpec("Log");
+		spec2.setIndicator("Log");
+		spec2.setContent(R.id.Log);
 
-		TabSpec spec3 = tabHost.newTabSpec("Tab 3");
-		spec3.setIndicator("Tab 3");
-		spec3.setContent(R.id.tab3);
+		TabSpec spec3 = tabHost.newTabSpec("Setup");
+		spec3.setIndicator("Setup");
+		spec3.setContent(R.id.Setup);
 
 		tabHost.addTab(spec1);
 		tabHost.addTab(spec2);
@@ -112,6 +115,9 @@ public class MainActivity extends Activity implements LocationListener {
 		recvNum1 = (TextView) findViewById(R.id.textView5);
 		recvNum2 = (TextView) findViewById(R.id.textView4);
 		recvNum3 = (TextView) findViewById(R.id.textView6);
+		frontlog = (TextView) findViewById(R.id.frontlog);
+		leftlog = (TextView) findViewById(R.id.leftlog);
+		rightlog = (TextView) findViewById(R.id.rightlog);
 
 		// 初始化藍芽
 		btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -126,12 +132,16 @@ public class MainActivity extends Activity implements LocationListener {
 		// 輸入名稱
 		filename = (EditText) findViewById(R.id.filename);
 
-		// G
-		LatText = (EditText) findViewById(R.id.LatText);
-		LogText = (EditText) findViewById(R.id.LogText);
-		submit = (Button) findViewById(R.id.submit);
 		// 開始連線
 		connect = (Button) findViewById(R.id.connect);
+		conn = (Button) findViewById(R.id.conn);
+		conn.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+				deviceAddr = "98:D3:31:B1:3A:56";
+				Thread t = new Thread(sppConnect);
+				t.start();
+			}
+		});
 		connect.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
 				deviceAddr = "98:D3:31:B1:3A:56";
@@ -141,11 +151,20 @@ public class MainActivity extends Activity implements LocationListener {
 		});
 		// 結束連線
 		disconnect = (Button) findViewById(R.id.disconnect);
+		disconn = (Button) findViewById(R.id.disconn);
+		disconn.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+
+				Disconnect();
+				ShowMsg("Disconnect", true);
+
+			}
+		});
 		disconnect.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
 
 				Disconnect();
-				ShowMsg("結束連線", true);
+				ShowMsg("Disconnect", true);
 
 			}
 		});
@@ -169,19 +188,19 @@ public class MainActivity extends Activity implements LocationListener {
 
 			}
 		});
-		getLocation();// 取得定位位置
-		setupWebView();// 設定webview
-		if (mostRecentLocation != null) {
-			LatText.setText("" + mostRecentLocation.getLatitude());
-			LogText.setText("" + mostRecentLocation.getLongitude());
-
-			// 將畫面移至定位點的位置
-			final String centerURL = "javascript:centerAt("
-					+ mostRecentLocation.getLatitude() + ","
-					+ mostRecentLocation.getLongitude() + ")";
-			if (webviewReady)
-				webView.loadUrl(centerURL);
-		}
+//		getLocation();// 取得定位位置
+//		setupWebView();// 設定webview
+//		if (mostRecentLocation != null) {
+//			LatText.setText("" + mostRecentLocation.getLatitude());
+//			LogText.setText("" + mostRecentLocation.getLongitude());
+//
+//			// 將畫面移至定位點的位置
+//			final String centerURL = "javascript:centerAt("
+//					+ mostRecentLocation.getLatitude() + ","
+//					+ mostRecentLocation.getLongitude() + ")";
+//			if (webviewReady)
+//				webView.loadUrl(centerURL);
+//		}
 		// G
 	}
 
@@ -252,7 +271,7 @@ public class MainActivity extends Activity implements LocationListener {
 				Thread t = new Thread(sppReceiver);
 				t.start();
 
-				ShowMsg("藍芽裝置已開啟: " + deviceAddr, true);
+				ShowMsg("Bluetooth device is opened: " + deviceAddr, true);
 			} catch (Exception e) {
 				e.printStackTrace();
 
@@ -263,7 +282,7 @@ public class MainActivity extends Activity implements LocationListener {
 				}
 
 				btSocket = null;
-				ShowMsg("藍芽裝置開啟失敗: " + e.getMessage(), true);
+				ShowMsg("Connection Failed: " + e.getMessage(), true);
 			}
 		}
 
@@ -322,6 +341,9 @@ public class MainActivity extends Activity implements LocationListener {
 						Show(Left_lengthtoStr, recvNum1);
 						Show(Front_lengthtoStr, recvNum2);
 						Show(Right_lengthtoStr, recvNum3);
+						Show(Left_lengthtoStr, leftlog);
+						Show(Front_lengthtoStr, frontlog);
+						Show(Right_lengthtoStr, rightlog);
 
 						j += 1;
 						if (j > 1024) {
@@ -367,7 +389,7 @@ public class MainActivity extends Activity implements LocationListener {
 				e.printStackTrace();
 
 				Disconnect(); // 中斷連線
-				ShowMsg("藍芽訊息接收失敗，連線已重設: " + e.getMessage(), true);
+				ShowMsg("Connection Failed: " + e.getMessage(), true);
 			}
 		}
 
@@ -427,7 +449,7 @@ public class MainActivity extends Activity implements LocationListener {
 	//
 
 	/** Sets up the WebView object and loads the URL of the page **/
-	private void setupWebView() {
+	/*private void setupWebView() {
 
 		webView = (WebView) findViewById(R.id.webview);
 		webView.getSettings().setJavaScriptEnabled(true);
@@ -441,7 +463,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 		});
 		webView.loadUrl(MAP_URL);
-	}
+	}*/
 
 	@Override
 	public void onLocationChanged(Location location) {// 定位位置改變時會執行的方法
@@ -470,7 +492,7 @@ public class MainActivity extends Activity implements LocationListener {
 
 			Disconnect(); // 中斷連線
 
-			ShowMsg("藍芽訊息送出失敗，連線已重設: " + e.getMessage(), true);
+			ShowMsg("Connecttion Failed: " + e.getMessage(), true);
 		}
 	}
 
